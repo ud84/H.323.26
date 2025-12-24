@@ -4,11 +4,12 @@
 #include <cstddef>
 
 using namespace h323_26;
+using namespace h323_26::core;
 
 TEST_CASE("BitReader basic functionality", "[core]") {
     // 0xAA = 10101010, 0xFF = 11111111
     std::vector<std::byte> data = { std::byte{0xAA}, std::byte{0xFF} };
-    BitReader reader(data);
+    core::BitReader reader(data);
 
     SECTION("Read bits within single byte") {
         auto val = reader.read_bits(1);

@@ -10,7 +10,8 @@ namespace h323_26 {
         EndOfStream,      // Not enough bits left in the buffer
         InvalidConstraint, // Value exceeds ASN.1 range
         AlignmentError,    // Failed to align to byte boundary
-        BufferOverflow
+        BufferOverflow,
+        UnsupportedFeature
     };
 
     struct Error {

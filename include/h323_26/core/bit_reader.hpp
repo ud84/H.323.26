@@ -6,7 +6,7 @@
 #include <span>
 #include <cstddef>
 
-namespace h323_26 {
+namespace h323_26::core {
 
     class BitReader {
     public:

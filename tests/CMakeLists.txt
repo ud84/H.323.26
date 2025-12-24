@@ -1,5 +1,6 @@
 ﻿add_executable(unit_tests 
     test_bit_reader.cpp
+    test_per_decoder.cpp
 )
 
 target_link_libraries(unit_tests 

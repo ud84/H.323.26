@@ -1,7 +1,7 @@
 ﻿#include <h323_26/core/bit_reader.hpp>
 #include <algorithm>
 
-namespace h323_26 {
+namespace h323_26::core {
 
     Result<uint64_t> BitReader::read_bits(size_t count) {
         if (count > 64) {
