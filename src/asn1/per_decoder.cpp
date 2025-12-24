@@ -75,4 +75,37 @@ namespace h323_26::asn1 {
         }
     }
 
+    Result<uint64_t> PerDecoder::decode_sequence_preamble(core::BitReader& reader, size_t optional_count) {
+        if (optional_count == 0) return 0;
+        if (optional_count > 64) {
+            return std::unexpected(Error{ ErrorCode::UnsupportedFeature, "Too many optional fields" });
+        }
+        return reader.read_bits(optional_count);
+    }
+
+    Result<bool> PerDecoder::decode_extension_marker(core::BitReader& reader) {
+        auto bit = reader.read_bits(1);
+        if (!bit) return std::unexpected(bit.error());
+        return *bit == 1;
+    }
+
+    Result<uint32_t> PerDecoder::decode_choice_index(core::BitReader& reader, uint32_t num_options, bool extensible) {
+        if (extensible) {
+            auto is_extended = reader.read_bits(1);
+            if (!is_extended) return std::unexpected(is_extended.error());
+            if (*is_extended) {
+                return std::unexpected(Error{ ErrorCode::UnsupportedFeature, "Extension choices not implemented yet" });
+            }
+        }
+
+        if (num_options <= 1) return 0;
+
+        // Количество бит = log2(num_options)
+        uint32_t bits = std::bit_width(num_options - 1);
+        auto index = reader.read_bits(bits);
+        if (!index) return std::unexpected(index.error());
+
+        return static_cast<uint32_t>(*index);
+    }
+
 } // namespace h323_26::asn1
