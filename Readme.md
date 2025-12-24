@@ -6,3 +6,6 @@ Born in 2026-ish style to prove that ASN.1 PER is not a curse, but a challenge.
 
 ## Goal
 Zero-copy, high-performance, and safe signaling for the next decade.
+
+	cmake -B build -G "Ninja"
+    cmake --build build
