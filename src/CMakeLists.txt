@@ -1,7 +1,9 @@
 ﻿# Создаем библиотеку
 add_library(h323_26_lib
     core/bit_reader.cpp
+    core/bit_writer.cpp
     asn1/per_decoder.cpp
+    asn1/per_encoder.cpp
 )
 
 # Указываем пути к заголовкам

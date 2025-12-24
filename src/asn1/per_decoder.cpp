@@ -108,4 +108,93 @@ namespace h323_26::asn1 {
         return static_cast<uint32_t>(*index);
     }
 
+    Result<size_t> PerDecoder::decode_length_determinant(core::BitReader& reader) {
+        // В UNALIGNED PER для длин < 128 выравнивание не всегда нужно, 
+        // но для простоты и соответствия большинству полей H.225:
+        auto first_bit = reader.read_bits(1);
+        if (!first_bit) return std::unexpected(first_bit.error());
+
+        if (*first_bit == 0) {
+            // Случай 1: длина 0..127 (7 бит)
+            auto val = reader.read_bits(7);
+            if (!val) return std::unexpected(val.error());
+            return static_cast<size_t>(*val);
+        }
+
+        auto second_bit = reader.read_bits(1);
+        if (!second_bit) return std::unexpected(second_bit.error());
+
+        if (*second_bit == 0) {
+            // Случай 2: длина 128..16383 (14 бит)
+            auto val = reader.read_bits(14);
+            if (!val) return std::unexpected(val.error());
+            return static_cast<size_t>(*val);
+        }
+
+        return std::unexpected(Error{ ErrorCode::UnsupportedFeature, "Huge lengths (>16k) not implemented" });
+    }
+
+    Result<std::string> PerDecoder::decode_ia5_string(core::BitReader& reader, std::optional<size_t> fixed_size) {
+        size_t length = 0;
+        if (fixed_size) {
+            length = *fixed_size;
+        }
+        else {
+            auto decoded_len = decode_length_determinant(reader);
+            if (!decoded_len) return std::unexpected(decoded_len.error());
+            length = *decoded_len;
+        }
+
+        if (length == 0) return "";
+
+        // IA5String символы занимают 7 бит в UNALIGNED PER, 
+        // НО если строка длинная или не ограничена, они часто пакуются в 8-битные октеты.
+        // Для H.225 Alias обычно используются 8-битные выровненные октеты.
+        reader.align_to_byte();
+
+        std::string res;
+        res.reserve(length);
+        for (size_t i = 0; i < length; ++i) {
+            auto ch = reader.read_bits(8);
+            if (!ch) return std::unexpected(ch.error());
+            res.push_back(static_cast<char>(*ch));
+        }
+        return res;
+    }
+
+    Result<std::vector<uint32_t>> PerDecoder::decode_oid(core::BitReader& reader) {
+        auto length_res = decode_length_determinant(reader);
+        if (!length_res) return std::unexpected(length_res.error());
+
+        size_t len = *length_res;
+        if (len == 0) return std::vector<uint32_t>{};
+
+        // OID всегда выровнен по байту в PER
+        reader.align_to_byte();
+
+        std::vector<uint32_t> nodes;
+        // Первый байт: X*40 + Y
+        auto first_byte_res = reader.read_bits(8);
+        if (!first_byte_res) return std::unexpected(first_byte_res.error());
+
+        uint8_t first = static_cast<uint8_t>(*first_byte_res);
+        nodes.push_back(first / 40);
+        nodes.push_back(first % 40);
+
+        size_t bytes_read = 1;
+        while (bytes_read < len) {
+            uint32_t node_val = 0;
+            uint8_t b;
+            do {
+                auto b_res = reader.read_bits(8);
+                if (!b_res) return std::unexpected(b_res.error());
+                b = static_cast<uint8_t>(*b_res);
+                node_val = (node_val << 7) | (b & 0x7F);
+                bytes_read++;
+            } while (b & 0x80); // Пока 8-й бит равен 1
+            nodes.push_back(node_val);
+        }
+        return nodes;
+    }
+
 } // namespace h323_26::asn1

@@ -1171,6 +1171,15 @@ build src\CMakeFiles\h323_26_lib.dir\core\bit_reader.cpp.obj: CXX_COMPILER__h323
   TARGET_COMPILE_PDB = src\CMakeFiles\h323_26_lib.dir\h323_26_lib.pdb
   TARGET_PDB = src\h323_26.pdb
 
+build src\CMakeFiles\h323_26_lib.dir\core\bit_writer.cpp.obj: CXX_COMPILER__h323_26_lib_unscanned_Debug D$:\dev\H.323.26\src\core\bit_writer.cpp || cmake_object_order_depends_target_h323_26_lib
+  CONFIG = Debug
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++latest -MDd
+  INCLUDES = -ID:\dev\H.323.26\include
+  OBJECT_DIR = src\CMakeFiles\h323_26_lib.dir
+  OBJECT_FILE_DIR = src\CMakeFiles\h323_26_lib.dir\core
+  TARGET_COMPILE_PDB = src\CMakeFiles\h323_26_lib.dir\h323_26_lib.pdb
+  TARGET_PDB = src\h323_26.pdb
+
 build src\CMakeFiles\h323_26_lib.dir\asn1\per_decoder.cpp.obj: CXX_COMPILER__h323_26_lib_unscanned_Debug D$:\dev\H.323.26\src\asn1\per_decoder.cpp || cmake_object_order_depends_target_h323_26_lib
   CONFIG = Debug
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++latest -MDd
@@ -1188,7 +1197,7 @@ build src\CMakeFiles\h323_26_lib.dir\asn1\per_decoder.cpp.obj: CXX_COMPILER__h32
 #############################################
 # Link the static library src\h323_26.lib
 
-build src\h323_26.lib: CXX_STATIC_LIBRARY_LINKER__h323_26_lib_Debug src\CMakeFiles\h323_26_lib.dir\core\bit_reader.cpp.obj src\CMakeFiles\h323_26_lib.dir\asn1\per_decoder.cpp.obj
+build src\h323_26.lib: CXX_STATIC_LIBRARY_LINKER__h323_26_lib_Debug src\CMakeFiles\h323_26_lib.dir\core\bit_reader.cpp.obj src\CMakeFiles\h323_26_lib.dir\core\bit_writer.cpp.obj src\CMakeFiles\h323_26_lib.dir\asn1\per_decoder.cpp.obj
   CONFIG = Debug
   LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -MDd
   LINK_FLAGS = /machine:x64
