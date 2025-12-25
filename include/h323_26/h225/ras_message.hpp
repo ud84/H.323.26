@@ -5,31 +5,25 @@
 
 namespace h323_26::h225 {
 
-    // Заглушка для второго типа сообщения
-    struct GatekeeperConfirm {
-        uint16_t requestSeqNum;
-        static Result<GatekeeperConfirm> decode(core::BitReader& reader) {
-            // Логика аналогична GRQ для этого примера
-            return GatekeeperRequest::decode(reader).transform([](auto grq) {
-                return GatekeeperConfirm{ grq.requestSeqNum };
-                });
-        }
-    };
-
     using RasMessage = std::variant<GatekeeperRequest, GatekeeperConfirm>;
 
     struct RasPDU {
-        static Result<RasMessage> decode(core::BitReader& reader) {
-            // RAS PDU — это extensible CHOICE. 
-            // В нашем примере 2 варианта: GRQ (0) и GCF (1)
-            return asn1::PerDecoder::decode_choice_index(reader, 2, true)
-                .and_then([&](uint32_t index) -> Result<RasMessage> {
-                switch (index) {
-                case 0: return GatekeeperRequest::decode(reader);
-                case 1: return GatekeeperConfirm::decode(reader);
-                default: return std::unexpected(Error{ ErrorCode::UnsupportedFeature, "Unknown RAS message index" });
-                }
-                    });
+        static Result<void> encode(core::BitWriter& writer, const RasMessage& msg) {
+            // 1. Кодируем индекс CHOICE. 
+            // В H.225.0 для RasMessage: GRQ - это индекс 3.
+            // Используем 33 варианта (как в базе v7), это даст 6 бит.
+            uint32_t index = 0;
+            if (std::holds_alternative<GatekeeperRequest>(msg)) index = 3;
+            else if (std::holds_alternative<GatekeeperConfirm>(msg)) index = 1;
+
+            // Пишем CHOICE index (extensible=true, num_options=33)
+            auto res = asn1::PerEncoder::encode_choice_index(writer, index, 33, true);
+            if (!res) return res;
+
+            // 2. Кодируем тело выбранного сообщения
+            return std::visit([&](auto&& arg) {
+                return arg.encode(writer);
+                }, msg);
         }
     };
 

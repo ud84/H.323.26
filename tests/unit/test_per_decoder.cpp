@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <h323_26/asn1/per_decoder.hpp>
+#include <h323_26/asn1/per_encoder.hpp>
+#include <h323_26/core/bit_writer.hpp>
 #include <vector>
 
 using namespace h323_26;
@@ -67,4 +69,24 @@ TEST_CASE("PER Extensible Constrained Integer", "[asn1]") {
         CHECK(*res == 7);
         CHECK(reader.bits_left() == 0); // 1 бит маркер + 1 бит префикс + 6 бит = 8 бит
     }
+}
+
+TEST_CASE("ASN.1 PER: OID Symmetry Test", "[asn1][oid]") {
+    using namespace h323_26;
+
+    // Стандартный OID для H.225.0 v7: {0 0 8 2250 0 7}
+    std::vector<uint32_t> original_oid = { 0, 0, 8, 2250, 0, 7 };
+
+    core::BitWriter writer;
+    auto enc_res = asn1::PerEncoder::encode_oid(writer, original_oid);
+    REQUIRE(enc_res.has_value());
+
+    core::BitReader reader(writer.data());
+    auto dec_res = asn1::PerDecoder::decode_oid(reader);
+
+    REQUIRE(dec_res.has_value());
+    CHECK(dec_res.value() == original_oid);
+
+    // Проверка конкретных узлов для уверенности
+    CHECK(dec_res.value()[3] == 2250);
 }
