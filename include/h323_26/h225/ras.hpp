@@ -10,30 +10,34 @@ namespace h323_26::h225 {
 
     struct GatekeeperRequest {
         uint16_t requestSeqNum;
+        std::vector<uint32_t> protocolIdentifier;
         std::optional<std::string> endpointAlias;
 
         static Result<GatekeeperRequest> decode(core::BitReader& reader) {
-            // Промежуточная структура для цепочки and_then
             struct DecodeState {
                 uint16_t seq;
                 uint64_t preamble;
+                std::vector<uint32_t> oid;
             };
 
             return asn1::PerDecoder::decode_extension_marker(reader)
-                .and_then([&](bool /*ext*/) {
-                // Читаем 1 бит преамбулы для endpointAlias
+                .and_then([&](bool) {
                 return asn1::PerDecoder::decode_sequence_preamble(reader, 1);
                     })
                 .and_then([&](uint64_t preamble) {
                 return asn1::PerDecoder::decode_constrained_integer(reader, 1, 65535)
                     .transform([preamble](uint64_t seq) {
-                    return DecodeState{ static_cast<uint16_t>(seq), preamble };
+                    return std::pair{ static_cast<uint16_t>(seq), preamble };
+                        });
+                    })
+                .and_then([&](auto pair) {
+                return asn1::PerDecoder::decode_oid(reader)
+                    .transform([&pair](std::vector<uint32_t> oid) {
+                    return DecodeState{ pair.first, pair.second, std::move(oid) };
                         });
                     })
                 .and_then([&](DecodeState state) -> Result<GatekeeperRequest> {
                 std::optional<std::string> alias;
-
-                // Если первый бит преамбулы установлен (endpointAlias присутствует)
                 if (state.preamble == 1) {
                     auto str_res = asn1::PerDecoder::decode_ia5_string(reader);
                     if (!str_res) return std::unexpected(str_res.error());
@@ -42,28 +46,28 @@ namespace h323_26::h225 {
 
                 return GatekeeperRequest{
                     .requestSeqNum = state.seq,
+                    .protocolIdentifier = std::move(state.oid),
                     .endpointAlias = std::move(alias)
                 };
                     });
         }
 
         Result<void> encode(core::BitWriter& writer) const {
-            // 1. Extension Marker
-            auto res = asn1::PerEncoder::encode_extension_marker(writer, false);
-            if (!res) return res;
+            // Extension Marker
+            if (auto res = asn1::PerEncoder::encode_extension_marker(writer, false); !res) return res;
 
-            // 2. Преамбула: 1 бит. ОЧЕНЬ ВАЖНО: 1 если Alias есть, 0 если нет.
-            res = asn1::PerEncoder::encode_sequence_preamble(writer, endpointAlias.has_value() ? 1 : 0, 1);
-            if (!res) return res;
+            // Преамбула (endpointAlias)
+            if (auto res = asn1::PerEncoder::encode_sequence_preamble(writer, endpointAlias.has_value() ? 1 : 0, 1); !res) return res;
 
-            // 3. SeqNum
-            res = asn1::PerEncoder::encode_constrained_integer(writer, requestSeqNum, 1, 65535);
-            if (!res) return res;
+            // SeqNum
+            if (auto res = asn1::PerEncoder::encode_constrained_integer(writer, requestSeqNum, 1, 65535); !res) return res;
 
-            // 4. Alias
+            // OID (Обязательное поле)
+            if (auto res = asn1::PerEncoder::encode_oid(writer, protocolIdentifier); !res) return res;
+
+            // Alias
             if (endpointAlias) {
-                res = asn1::PerEncoder::encode_ia5_string(writer, *endpointAlias);
-                if (!res) return res;
+                if (auto res = asn1::PerEncoder::encode_ia5_string(writer, *endpointAlias); !res) return res;
             }
             return {};
         }
