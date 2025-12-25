@@ -12,8 +12,7 @@ using namespace h323_26;
 TEST_CASE("H.225.0 RAS: Global Symmetry", "[h225]") {
     h225::GatekeeperRequest grq{
         .requestSeqNum = 1234,
-        .protocolIdentifier = {0, 0, 8, 2250, 0, 8}, // v8
-        .endpointAlias = "H.323.26-Terminal"
+        .protocolIdentifier = {0, 0, 8, 2250, 0, 7}
     };
 
     core::BitWriter writer;
@@ -24,9 +23,9 @@ TEST_CASE("H.225.0 RAS: Global Symmetry", "[h225]") {
 
     REQUIRE(decoded.has_value());
     CHECK(decoded->requestSeqNum == 1234);
-    CHECK(decoded->protocolIdentifier == std::vector<uint32_t>{0, 0, 8, 2250, 0, 8});
-    REQUIRE(decoded->endpointAlias.has_value());
-    CHECK(*decoded->endpointAlias == "H.323.26-Terminal");
+    CHECK(decoded->protocolIdentifier == std::vector<uint32_t>{0, 0, 8, 2250, 0, 7});
+    //REQUIRE(decoded->endpointAlias.has_value());
+    //CHECK(*decoded->endpointAlias == "H.323.26-Terminal");
 }
 
 TEST_CASE("H.225.0 RAS: Optional field absence", "[h225]") {

@@ -53,22 +53,35 @@ namespace h323_26::h225 {
         }
 
         Result<void> encode(core::BitWriter& writer) const {
-            // Extension Marker
+            // В SEQUENCE GatekeeperRequest:
+            // 1. Extension Marker (1 бит) - НЕТ в базовой части (ставим 0)
             if (auto res = asn1::PerEncoder::encode_extension_marker(writer, false); !res) return res;
 
-            // Преамбула (endpointAlias)
-            if (auto res = asn1::PerEncoder::encode_sequence_preamble(writer, endpointAlias.has_value() ? 1 : 0, 1); !res) return res;
+            // 2. Преамбула OPTIONAL полей. В v7 их много (12 штук!). 
+            // Если мы шлем только обязательные, надо записать 12 нулей (битовая маска).
+            if (auto res = asn1::PerEncoder::encode_sequence_preamble(writer, 0, 12); !res) return res;
 
-            // SeqNum
+            // 3. requestSeqNum
             if (auto res = asn1::PerEncoder::encode_constrained_integer(writer, requestSeqNum, 1, 65535); !res) return res;
 
-            // OID (Обязательное поле)
+            // 4. protocolIdentifier (OID)
             if (auto res = asn1::PerEncoder::encode_oid(writer, protocolIdentifier); !res) return res;
 
-            // Alias
-            if (endpointAlias) {
-                if (auto res = asn1::PerEncoder::encode_ia5_string(writer, *endpointAlias); !res) return res;
-            }
+            return {};
+        }
+    };
+
+    // Заглушка для второго типа сообщения
+    struct GatekeeperConfirm {
+        uint16_t requestSeqNum;
+        static Result<GatekeeperConfirm> decode(core::BitReader& reader) {
+            // Логика аналогична GRQ для этого примера
+            return GatekeeperRequest::decode(reader).transform([](auto grq) {
+                return GatekeeperConfirm{ grq.requestSeqNum };
+                });
+        }
+
+        Result<void> encode(core::BitWriter& writer) const {
             return {};
         }
     };

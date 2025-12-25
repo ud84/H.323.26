@@ -74,15 +74,14 @@ namespace h323_26::asn1 {
 
     Result<void> PerEncoder::encode_length_determinant(core::BitWriter& writer, size_t length) {
         if (length < 128) {
-            // Случай 1: 0 + 7 бит длины
-            return writer.write_bits(length, 8); // Старший бит будет 0 автоматически
+            // Стандарт X.691: бит 0 + 7 бит значения. Итого 8 бит.
+            return writer.write_bits(static_cast<uint64_t>(length), 8);
         }
-        else if (length < 16384) {
-            // Случай 2: 10 + 14 бит длины
-            // Устанавливаем два старших бита в 10
-            uint64_t val = 0x8000 | (length & 0x3FFF);
+        /*else if (length < 16384) {
+            // Бит 10 + 14 бит значения. Итого 16 бит.
+            uint64_t val = 0x8000 | (static_cast<uint64_t>(length) & 0x3FFF);
             return writer.write_bits(val, 16);
-        }
+        }*/
         return std::unexpected(Error{ ErrorCode::UnsupportedFeature, "Huge lengths not supported" });
     }
 

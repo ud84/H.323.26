@@ -3,3 +3,6 @@
 /CMakeFiles
 /out
 /_deps
+/build.ninja
+*.cmake
+/DartConfiguration.tcl
